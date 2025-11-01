@@ -1,23 +1,22 @@
 import { useState } from 'react'
-import { generateSudoku, createPuzzle, getValidSizes } from './utils/sudokuGenerator'
+import { generateSudoku, createPuzzle} from './utils/sudokuGenerator'
 import { generatePrintablePage } from './utils/printableGenerator'
-import type { SudokuType, Difficulty, DifficultyOption } from './types'
+import type { Difficulty, DifficultyOption } from './types'
 
 function App() {
-  const [sudokuType, setSudokuType] = useState<SudokuType>('general')
+
   const [size, setSize] = useState<number>(9)
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
 
-  const sudokuTypes: SudokuType[] = ['general', 'kill', 'diagram']
   const difficulties: DifficultyOption[] = [
     { value: 'easy', label: 'Easy (Kids Easy - 65% filled)', percent: 65 },
     { value: 'medium', label: 'Medium (Adult Easy - 40% filled)', percent: 40 },
     { value: 'hard', label: 'Hard (Adult Medium - 34% filled)', percent: 34 },
     { value: 'extremely hard', label: 'Extremely Hard (Adult Hard - 28% filled)', percent: 28 },
   ]
-  const validSizes = getValidSizes(sudokuType)
 
+  const validSizes = [4, 6, 9]
   const handleGenerate = (): void => {
     setIsGenerating(true)
 
@@ -31,7 +30,7 @@ function App() {
         const puzzle = createPuzzle(completeGrid, size, difficulty)
 
         // Generate printable page (pass both puzzle and solution)
-        generatePrintablePage(puzzle, completeGrid, size, sudokuType, difficulty)
+        generatePrintablePage(puzzle, completeGrid, size, difficulty)
       } catch (error) {
         console.error('Error generating Sudoku:', error)
         alert('Error generating Sudoku. Please try again.')
@@ -41,16 +40,6 @@ function App() {
     }, 0)
   }
 
-  const handleTypeChange = (newType: SudokuType): void => {
-    setSudokuType(newType)
-    const sizes = getValidSizes(newType)
-    // Reset size to default for new type
-    if (newType === 'general') {
-      setSize(9)
-    } else {
-      setSize(sizes[0] || 9)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
@@ -64,30 +53,6 @@ function App() {
           </p>
 
           <div className="space-y-6">
-            {/* Sudoku Type Selection */}
-            <div>
-              <label htmlFor="sudoku-type" className="block text-sm font-semibold text-gray-700 mb-2">
-                Sudoku Type
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {sudokuTypes.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => handleTypeChange(type)}
-                    className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                      sudokuType === type
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Size Selection (only for general type) */}
-            {sudokuType === 'general' && (
               <div>
                 <label htmlFor="grid-size" className="block text-sm font-semibold text-gray-700 mb-2">
                   Grid Size
@@ -108,7 +73,7 @@ function App() {
                   ))}
                 </div>
               </div>
-            )}
+
 
             {/* Difficulty Selection */}
             <div>
