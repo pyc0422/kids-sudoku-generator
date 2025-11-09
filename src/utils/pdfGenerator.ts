@@ -1,10 +1,10 @@
 import { jsPDF } from 'jspdf';
-import type { Grid, SudokuType, Difficulty } from '../types';
+import type { Grid, Difficulty } from '../types';
 
 /**
  * Generates a PDF from a Sudoku puzzle
  */
-export function generateSudokuPDF(puzzle: Grid, size: number, type: SudokuType, difficulty: Difficulty): void {
+export function generateSudokuPDF(puzzle: Grid, size: number, difficulty: Difficulty): void {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -17,7 +17,7 @@ export function generateSudokuPDF(puzzle: Grid, size: number, type: SudokuType, 
 
   // Subtitle with type and difficulty
   doc.setFontSize(12);
-  const subtitle = `${type.charAt(0).toUpperCase() + type.slice(1)} - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+  const subtitle = `General - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
   doc.text(subtitle, pageWidth / 2, 40, { align: 'center' });
 
   // Get box dimensions
@@ -92,7 +92,6 @@ export function generateSudokuPDF(puzzle: Grid, size: number, type: SudokuType, 
   }
 
   // Save PDF
-  const filename = `sudoku-${type}-${size}x${size}-${difficulty}.pdf`;
+  const filename = `sudoku-general-${size}x${size}-${difficulty}.pdf`;
   doc.save(filename);
 }
-

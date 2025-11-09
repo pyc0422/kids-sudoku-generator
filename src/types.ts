@@ -1,6 +1,4 @@
-// Type definitions for Sudoku Generator
-
-export type SudokuType = 'general' | 'kill' | 'diagram';
+// Type definitions for the general Sudoku generator
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'extremely hard';
 
@@ -16,4 +14,3 @@ export interface DifficultyOption {
   label: string;
   percent: number;
 }
-
