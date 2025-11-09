@@ -4,10 +4,8 @@ A web application to generate Sudoku puzzles for printing. Built with React, Typ
 
 ## Features
 
-- **Multiple Sudoku Types**: General, Kill, Diagram (extensible for more types)
-- **Flexible Grid Sizes**:
-  - General type: 4×4, 6×6, or 9×9 (default 9×9)
-  - Other types: 9×9
+- **Classic Sudoku Focus**: General puzzles built with the standard Sudoku rules
+- **Flexible Grid Sizes**: 4×4, 6×6, or 9×9 (default 9×9)
 - **Four Difficulty Levels**:
   - **Easy**: Kids Easy - 65% filled (perfect for children)
   - **Medium**: Adult Easy - 40% filled (industry standard easy)
@@ -30,7 +28,7 @@ A web application to generate Sudoku puzzles for printing. Built with React, Typ
 
 ### Prerequisites
 
-- Node.js 16+ and npm
+- Node.js 22.x and npm
 
 ### Installation
 
@@ -56,12 +54,11 @@ npm run preview
 
 ## Usage
 
-1. Select a Sudoku type (General, Kill, or Diagram)
-2. For General type, choose grid size (4×4, 6×6, or 9×9)
-3. Select difficulty level
-4. Click "Generate Printable Sudoku" to open a printable page
-5. Use "Show Answer" to view the solution (won't print)
-6. Print using your browser's print function (Ctrl+P / Cmd+P)
+1. Choose a grid size (4×4, 6×6, or 9×9)
+2. Select a difficulty level
+3. Click "Generate Printable Sudoku" to open a printable page
+4. Use "Show Answer" to view the solution (won't print)
+5. Print using your browser's print function (Ctrl+P / Cmd+P)
 
 ## Deployment
 
@@ -120,4 +117,3 @@ This project follows static web app principles:
 ## License
 
 MIT
-

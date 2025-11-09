@@ -2,6 +2,26 @@
 
 import type { Grid, BoxDimensions, Difficulty } from '../types';
 
+const VALID_SIZES = [4, 6, 9] as const;
+const digitsCache = new Map<number, number[]>();
+
+function isValidSize(size: number): size is (typeof VALID_SIZES)[number] {
+  return VALID_SIZES.some(validSize => validSize === size);
+}
+
+function assertValidSize(size: number): asserts size is (typeof VALID_SIZES)[number] {
+  if (!isValidSize(size)) {
+    throw new Error(`Unsupported Sudoku size "${size}". Allowed sizes: ${VALID_SIZES.join(', ')}`);
+  }
+}
+
+function getDigits(size: number): number[] {
+  if (!digitsCache.has(size)) {
+    digitsCache.set(size, Array.from({ length: size }, (_, i) => i + 1));
+  }
+  return digitsCache.get(size)!;
+}
+
 /**
  * Gets box dimensions for a given grid size
  */
@@ -9,31 +29,40 @@ function getBoxDimensions(size: number): BoxDimensions {
   if (size === 9) return { rows: 3, cols: 3 };
   if (size === 6) return { rows: 2, cols: 3 };
   if (size === 4) return { rows: 2, cols: 2 };
-  // Default to square boxes
-  const boxSize = Math.sqrt(size);
-  return { rows: boxSize, cols: boxSize };
+  throw new Error(`Unsupported Sudoku size "${size}".`);
 }
 
 /**
  * Generates a valid Sudoku grid of the specified size
  */
 export function generateSudoku(size: number): Grid {
+  assertValidSize(size);
   const grid: Grid = new Array(size).fill(null).map(() => new Array(size).fill(0));
   const boxDims = getBoxDimensions(size);
+  const digits = getDigits(size);
 
-  // Fill diagonal boxes first
-  fillDiagonalBoxes(grid, size, boxDims);
+  // Repeat generation attempts in the rare case the solver gets stuck
+  const maxAttempts = 5;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    grid.forEach(row => row.fill(0));
 
-  // Fill remaining cells using backtracking
-  solveSudoku(grid, size, boxDims);
+    // Fill diagonal boxes first
+    fillDiagonalBoxes(grid, size, boxDims, digits);
 
-  return grid;
+    // Fill remaining cells using optimized backtracking
+    if (solveSudoku(grid, size, boxDims, digits)) {
+      return grid;
+    }
+  }
+
+  throw new Error('Failed to generate a valid Sudoku grid after multiple attempts.');
 }
 
 /**
  * Fills the diagonal boxes with valid numbers
  */
-function fillDiagonalBoxes(grid: Grid, size: number, boxDims: BoxDimensions): void {
+function fillDiagonalBoxes(grid: Grid, size: number, boxDims: BoxDimensions, digits: number[]): void {
+  // Fill diagonal boxes first
   const boxesPerRow = size / boxDims.cols;
   for (let boxRow = 0; boxRow < boxesPerRow; boxRow++) {
     for (let boxCol = 0; boxCol < boxesPerRow; boxCol++) {
@@ -41,7 +70,7 @@ function fillDiagonalBoxes(grid: Grid, size: number, boxDims: BoxDimensions): vo
       if (boxRow === boxCol) {
         const startRow = boxRow * boxDims.rows;
         const startCol = boxCol * boxDims.cols;
-        fillBox(grid, startRow, startCol, boxDims, size);
+        fillBox(grid, startRow, startCol, boxDims, digits);
       }
     }
   }
@@ -50,8 +79,8 @@ function fillDiagonalBoxes(grid: Grid, size: number, boxDims: BoxDimensions): vo
 /**
  * Fills a box with random valid numbers
  */
-function fillBox(grid: Grid, row: number, col: number, boxDims: BoxDimensions, size: number): void {
-  const numbers = shuffleArray([...new Array(size)].map((_, i) => i + 1));
+function fillBox(grid: Grid, row: number, col: number, boxDims: BoxDimensions, digits: number[]): void {
+  const numbers = shuffleArray(digits);
   let numIndex = 0;
 
   for (let i = 0; i < boxDims.rows; i++) {
@@ -62,27 +91,75 @@ function fillBox(grid: Grid, row: number, col: number, boxDims: BoxDimensions, s
 }
 
 /**
- * Solves the Sudoku using backtracking
+ * Solves the Sudoku using backtracking with a minimum remaining value heuristic
  */
-function solveSudoku(grid: Grid, size: number, boxDims: BoxDimensions): boolean {
+function solveSudoku(grid: Grid, size: number, boxDims: BoxDimensions, digits: number[]): boolean {
+  const cell = findBestCell(grid, size, boxDims, digits);
+  if (!cell) {
+    // No empty cells left
+    return true;
+  }
+
+  const { row, col, candidates } = cell;
+  for (const num of candidates) {
+    grid[row][col] = num;
+    if (solveSudoku(grid, size, boxDims, digits)) {
+      return true;
+    }
+    grid[row][col] = 0;
+  }
+
+  return false;
+}
+
+interface CandidateCell {
+  row: number;
+  col: number;
+  candidates: number[];
+}
+
+function findBestCell(grid: Grid, size: number, boxDims: BoxDimensions, digits: number[]): CandidateCell | null {
+  let bestCell: CandidateCell | null = null;
+  let bestCount = Number.MAX_SAFE_INTEGER;
+
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
-      if (grid[row][col] === 0) {
-        const numbers = shuffleArray([...new Array(size)].map((_, i) => i + 1));
-        for (const num of numbers) {
-          if (isValid(grid, row, col, num, size, boxDims)) {
-            grid[row][col] = num;
-            if (solveSudoku(grid, size, boxDims)) {
-              return true;
-            }
-            grid[row][col] = 0;
-          }
+      if (grid[row][col] !== 0) continue;
+
+      const candidates = getCandidates(grid, row, col, size, boxDims, digits);
+      if (candidates.length === 0) {
+        return { row, col, candidates };
+      }
+
+      if (candidates.length < bestCount) {
+        bestCount = candidates.length;
+        bestCell = { row, col, candidates: shuffleArray(candidates) };
+
+        if (bestCount === 1) {
+          return bestCell;
         }
-        return false;
       }
     }
   }
-  return true;
+
+  return bestCell;
+}
+
+function getCandidates(
+  grid: Grid,
+  row: number,
+  col: number,
+  size: number,
+  boxDims: BoxDimensions,
+  digits: number[]
+): number[] {
+  const candidates: number[] = [];
+  for (const num of digits) {
+    if (isValid(grid, row, col, num, size, boxDims)) {
+      candidates.push(num);
+    }
+  }
+  return candidates;
 }
 
 /**
@@ -142,6 +219,7 @@ function getSpatialRegion(row: number, col: number, size: number): number {
  * Distributes removals evenly to avoid clustering
  */
 export function createPuzzle(grid: Grid, size: number, difficulty: Difficulty): Grid {
+  assertValidSize(size);
   const puzzle: Grid = grid.map(row => [...row]);
   const boxDims = getBoxDimensions(size);
   const totalCells = size * size;
@@ -413,15 +491,3 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return arr;
 }
-
-/**
- * Gets valid sizes for a given Sudoku type
- */
-export function getValidSizes(type: string): number[] {
-  if (type === 'general') {
-    return [4, 6, 9];
-  }
-  // For other types, default to 9x9 for now
-  return [9];
-}
-

@@ -1,4 +1,4 @@
-import type { Grid, SudokuType, Difficulty } from '../types';
+import type { Grid, Difficulty } from '../types';
 
 /**
  * Gets box dimensions for a given grid size
@@ -18,11 +18,10 @@ export function generatePrintablePage(
   puzzle: Grid,
   solution: Grid,
   size: number,
-  type: SudokuType,
   difficulty: Difficulty
 ): void {
   const boxDims = getBoxDimensions(size);
-  const html = generateHTML(puzzle, solution, size, type, difficulty, boxDims);
+  const html = generateHTML(puzzle, solution, size, difficulty, boxDims);
 
   // Create a new window with the printable content
   const printWindow = window.open('', '_blank');
@@ -46,12 +45,11 @@ function generateHTML(
   puzzle: Grid,
   solution: Grid,
   size: number,
-  type: SudokuType,
   difficulty: Difficulty,
   boxDims: { rows: number; cols: number }
 ): string {
   const title = 'Sudoku Puzzle';
-  const subtitle = `${type.charAt(0).toUpperCase() + type.slice(1)} - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+  const subtitle = `General - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
 
   const cellSize = size === 9 ? '50px' : size === 6 ? '60px' : '70px';
   const fontSize = size === 9 ? '24px' : size === 6 ? '28px' : '32px';
@@ -306,4 +304,3 @@ function generateHTML(
 </body>
 </html>`;
 }
-
